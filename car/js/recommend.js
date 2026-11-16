@@ -1,5 +1,5 @@
 /* המלצות לקונה – כללים פשוטים על בסיס הממצאים. כל המלצה מפנה לממצא שיצר אותה. */
-export function recommendations(r, risk, valuation){
+export function recommendations(r, risk, valuation, extra = {}){
   const out = [];
   const add = (level, text) => out.push({level, text});
 
@@ -19,6 +19,11 @@ export function recommendations(r, risk, valuation){
   if (o.hasHistory && o.n >= 4) add("mid", `הרכב עבר ${o.n} ידיים – שאלו על סיבות המכירה הקודמות.`);
   const vm = valuation && valuation.items && valuation.items.find(i => i.id === "vs_model");
   if (vm && vm.status === "estimate" && vm.tone === "warn") add("mid", vm.text + ". השוו גם למחירון מסחרי לפני משא ומתן.");
+  if (extra.devaluePct){
+    const target = extra.devaluedAsking ? (Math.round(extra.devaluedAsking.after / 500) * 500).toLocaleString("he-IL") : null;
+    const t = target ? ` יעד למשא ומתן לפי המחיר המבוקש: כ-₪ ${target}, אם המוכר לא כבר כלל את ירידת הערך במחיר.` : "";
+    add("high", `הוזנה ירידת ערך של ${extra.devaluePct}%. בקשו את דוח השמאי ואת חשבוניות התיקון, ובדקו במכון שהתיקון בוצע כראוי.${t}`);
+  }
   add("info", "בקשו מהמוכר ספר טיפולים וחשבוניות – אין מאגר ציבורי להיסטוריית טיפולים.");
   return out;
 }

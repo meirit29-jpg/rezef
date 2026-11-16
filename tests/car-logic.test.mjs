@@ -63,3 +63,25 @@ test("valuation: market comparison is marked not connected; no data -> unavailab
   assert.equal(compareAsking({asking: 1, newPrice: null, estimate: null}).items[0].status, "unavailable");
   assert.ok(recommendations(r, riskScore(r), cmp).some(x => x.level === "must"));
 });
+
+test("devaluation: parse, apply to estimate, deduct from asking price", async () => {
+  const { parseDevaluation, applyDevaluation, devaluedAsking } = await import("../car/js/valuation.js");
+  assert.deepEqual(parseDevaluation(""), {pct: null});
+  assert.equal(parseDevaluation("12.5%").pct, 12.5);
+  assert.equal(parseDevaluation("7,5").pct, 7.5);
+  assert.ok(parseDevaluation("0").error);
+  assert.ok(parseDevaluation("150").error);
+  const est = {value: 100000, low: 93000, high: 107000, lines: [{t: "גיל", pct: -0.3}]};
+  const d = applyDevaluation(est, 10);
+  assert.equal(d.before, 100000);
+  assert.equal(d.value, 90000);
+  assert.equal(Math.round(d.low), 83700);
+  assert.equal(d.lines.at(-1).manual, true);
+  assert.equal(applyDevaluation(est, null), est);
+  assert.deepEqual(devaluedAsking(80000, 10), {after: 72000, cut: 8000});
+  assert.equal(devaluedAsking(null, 10), null);
+  // the adjusted estimate drives the verdict
+  const tone = e => compareAsking({asking: 100000, newPrice: {value: 200000}, estimate: e}).items.find(i => i.id === "vs_model").tone;
+  assert.equal(tone(est), "ok");   // 100,000 inside 93k-107k
+  assert.equal(tone(d), "warn");   // after 10%: range tops at 96,300
+});

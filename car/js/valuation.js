@@ -29,6 +29,35 @@ export function modelEstimate({newPrice, age, km, owners}){
   return {value, low: value * 0.93, high: value * 1.07, lines};
 }
 
+/** ירידת ערך שהמשתמש הזין (למשל מדוח שמאי או מדוח מרכז הסליקה).
+ *  מחזיר null אם הערך לא תקין. האחוז מוכפל על הסכום (שווי × (1 − אחוז)). */
+export function parseDevaluation(txt){
+  const s = String(txt ?? "").replace(",", ".").replace(/[^\d.]/g, "");
+  if (s === "") return {pct: null};
+  const p = Number(s);
+  if (!isFinite(p) || p <= 0 || p >= 100) return {pct: null, error: "יש להזין אחוז בין 0 ל-100"};
+  return {pct: p};
+}
+
+export function applyDevaluation(estimate, pct){
+  if (!estimate || !pct) return estimate;
+  const f = 1 - pct / 100;
+  return {
+    ...estimate,
+    before: estimate.value,
+    value: estimate.value * f, low: estimate.low * f, high: estimate.high * f,
+    devaluePct: pct,
+    lines: [...estimate.lines, {t: `ירידת ערך ${pct}% (הוזן ידנית)`, pct: -pct / 100, manual: true}]
+  };
+}
+
+/** מחיר מבוקש אחרי ניכוי ירידת הערך – יעד למשא ומתן אם המוכר לא כלל אותה במחיר */
+export function devaluedAsking(asking, pct){
+  if (!asking || !pct) return null;
+  const after = asking * (1 - pct / 100);
+  return {after, cut: asking - after};
+}
+
 export function compareAsking({asking, newPrice, estimate}){
   const out = {asking, items: []};
   if (!asking) return out;

@@ -2,7 +2,7 @@ import { esc, nis, num, fmtPlate, fmtDate, fmtDateTime, cleanPlate } from "./uti
 import { SOURCES, resourceUrl } from "./sources.js";
 import { buildReport } from "./report.js";
 import { riskScore } from "./risk.js";
-import { modelEstimate, compareAsking } from "./valuation.js";
+import { modelEstimate, compareAsking, parseDevaluation, applyDevaluation, devaluedAsking } from "./valuation.js";
 import { recommendations } from "./recommend.js";
 import { loadTesseract, loadImage, recognizePlate } from "./ocr.js";
 import * as store from "./store.js";
@@ -165,7 +165,9 @@ function renderReport(r, opts = {}){
     <div class="grid">
       <label class="kv"><div class="k">מחיר מבוקש (₪)</div><input class="inp" id="vAsk" inputmode="numeric" placeholder="הזינו מחיר"></label>
       <label class="kv"><div class="k">ק״מ נוכחי</div><input class="inp" id="vKm" inputmode="numeric" value="${r.km ?? ""}" placeholder="${r.km == null ? "לא במאגר" : ""}"></label>
+      <label class="kv"><div class="k">ירידת ערך (%)</div><input class="inp" id="vDev" inputmode="decimal" placeholder="למשל 10"></label>
     </div>
+    <div class="note">ירידת ערך מוזנת ידנית, למשל מדוח שמאי או מדוח מרכז הסליקה. היא לא נבדקת מול מקור, ומסומנת בדוח כ"הוזן ידנית".</div>
     <div id="vOut"></div>
   </div>`;
 
@@ -192,10 +194,25 @@ function renderReport(r, opts = {}){
     const asking = Number(($("vAsk").value || "").replace(/\D/g, "")) || null;
     const kmTxt = ($("vKm").value || "").replace(/\D/g, "");
     const km = kmTxt === "" ? null : Number(kmTxt);
-    const est = r.newPrice ? modelEstimate({newPrice: r.newPrice.value, age: r.age, km, owners: r.owners}) : null;
+    const dev = parseDevaluation($("vDev").value);
+    const base = r.newPrice ? modelEstimate({newPrice: r.newPrice.value, age: r.age, km, owners: r.owners}) : null;
+    const est = applyDevaluation(base, dev.pct);
     const cmp = compareAsking({asking, newPrice: r.newPrice, estimate: est});
     const pct = x => (x > 0 ? "+" : "") + (x * 100).toFixed(1) + "%";
+    const r500 = x => nis(Math.round(x / 500) * 500);
     let v = "";
+    if (dev.error) v += `<div class="warn">${esc(dev.error)}</div>`;
+    if (dev.pct){
+      const da = devaluedAsking(asking, dev.pct);
+      v += `<h3>שקלול ירידת ערך ${dev.pct}% <span class="badge na">הוזן ידנית</span></h3><table>
+        ${est ? `<tr><td>הערכת מודל לפני ירידת ערך</td><td class="num">${r500(est.before)}</td></tr>
+                 <tr><td>הערכת מודל אחרי ירידת ערך</td><td class="num"><b>${r500(est.value)}</b></td></tr>` : ""}
+        ${da ? `<tr><td>מחיר מבוקש אחרי ניכוי ירידת הערך</td><td class="num"><b>${r500(da.after)}</b></td></tr>
+                <tr><td>סכום הניכוי</td><td class="num neg">−${r500(da.cut)}</td></tr>` : ""}
+      </table>
+      ${!est && !da ? `<div class="note">הזינו מחיר מבוקש כדי לראות את המחיר אחרי ניכוי ירידת הערך.</div>` : ""}
+      <div class="note">"מחיר אחרי ניכוי" רלוונטי רק אם המוכר לא כבר הוריד את המחיר בגלל ירידת הערך. זה חישוב, לא מחירון.</div>`;
+    }
     if (est){
       v += `<h3>הערכת מודל <span class="badge est">הערכה – לא מחירון</span></h3>
         <div class="price">${nis(Math.round(est.value / 500) * 500)}</div>
@@ -209,9 +226,9 @@ function renderReport(r, opts = {}){
         <div class="${i.tone === "warn" ? "warn" : "sub"}">${esc(i.text)}${i.id === "vs_model" && i.status === "estimate" ? ` (${pct(i.pct)})` : ""}</div></div>`).join("");
     } else v += `<div class="note">הזינו מחיר מבוקש כדי לקבל השוואה.</div>`;
     $("vOut").innerHTML = v;
-    $("recs").innerHTML = recommendations(r, risk, cmp).map(x => `<li class="${x.level}">${esc(x.text)}</li>`).join("");
+    $("recs").innerHTML = recommendations(r, risk, cmp, {devaluePct: dev.pct, devaluedAsking: devaluedAsking(asking, dev.pct)}).map(x => `<li class="${x.level}">${esc(x.text)}</li>`).join("");
   };
-  $("vAsk").oninput = $("vKm").oninput = updVal; updVal();
+  $("vAsk").oninput = $("vKm").oninput = $("vDev").oninput = updVal; updVal();
 
   $("aFav").onclick = async () => { const on = await store.toggleFav(r.plate, store.labelOf(r)); $("aFav").textContent = on ? "★ במועדפים" : "☆ למועדפים"; };
   $("aSave").onclick = async () => {
