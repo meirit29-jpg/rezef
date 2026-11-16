@@ -18,6 +18,17 @@
 | `admin/` | ממשק ניהול (דורש Supabase + role=admin) |
 | `../supabase/car_platform.sql` | סכימה + RLS + פונקציית סטטיסטיקות |
 
+## אירוח ב-Vercel (שלב 0)
+1. vercel.com/new ← Import של הריפו `rezef` ← Framework: **Other** ← Deploy. אין צורך בהגדרות build.
+2. הפונקציה `api/datagov.js` עולה אוטומטית ומשמשת פרוקסי עם מטמון ל-data.gov.il.
+3. אותה כתובת משרתת גם את אפליקציית הכושר (`/`) וגם את בדיקת הרכב (`/car/`).
+4. רק אחרי שהכול עובד ב-Vercel: להפוך את הריפו לפרטי. ב-GitHub Pages חינמי ריפו פרטי מפסיק להתפרסם.
+
+הלקוח מנסה קודם את `/api/datagov`. אם הפרוקסי לא קיים (למשל ב-GitHub Pages), הוא פונה ישירות ל-data.gov.il, ולכן שתי הסביבות עובדות.
+
+## בדיקות
+`node --test tests/*.test.mjs` (Node 22 ומעלה): לוגיקת הדוח, הסיכון והשווי, והפרוקסי עם fetch מדומה.
+
 ## הפעלת ענן וניהול
 1. להריץ `supabase/car_platform.sql` ב-SQL Editor.
 2. למלא `SB_URL` / `SB_KEY` ב-`js/config.js` (או בהגדרות באזור האישי).

@@ -1,11 +1,35 @@
 /* גישה ל-data.gov.il (CKAN).
- * fetch רגיל, ואם CORS נחסם – JSONP (כמו בגרסה הקודמת שעבדה).
+ * סדר ניסיונות:
+ *   1. הפרוקסי שלנו /api/datagov (Vercel) – מטמון ולוג בשרת.
+ *   2. אם אין פרוקסי (למשל GitHub Pages) או שהוא נכשל – fetch ישיר, ואם CORS נחסם – JSONP (כמו קודם).
  * לכל משאב נשלף גם תאריך העדכון האחרון שלו (resource_show) ונשמר בזיכרון ל-6 שעות. */
 import { DATAGOV, SOURCES } from "./sources.js";
 
 const API = DATAGOV + "/api/3/action/";
+const PROXY = "/api/datagov";
+const NO_PROXY_KEY = "carNoProxy";
+
+const proxyOff = () => { try{ return sessionStorage.getItem(NO_PROXY_KEY) === "1"; }catch{ return false; } };
+const setProxyOff = () => { try{ sessionStorage.setItem(NO_PROXY_KEY, "1"); }catch{} };
+
+async function viaProxy(action, params){
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 12000);
+  try{
+    const r = await fetch(PROXY + "?" + new URLSearchParams({action, ...params}).toString(), {signal: ctl.signal});
+    const type = r.headers.get("content-type") || "";
+    // אין פרוקסי בסביבה הזו (404 / דף HTML) – לא לנסות שוב בסשן הזה
+    if (r.status === 404 || !type.includes("json")){ setProxyOff(); throw new Error("no proxy"); }
+    if (!r.ok) throw new Error("proxy HTTP " + r.status);
+    const j = await r.json();
+    if (!j.success) throw new Error("API error");
+    return j.result;
+  } finally { clearTimeout(t); }
+}
 
 async function call(action, params){
+  if (!proxyOff()){
+    try{ return await viaProxy(action, params); }catch(e){ /* נופלים לגישה ישירה */ }
+  }
   const url = API + action + "?" + new URLSearchParams(params).toString();
   try{
     const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 12000);
