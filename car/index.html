@@ -2,513 +2,175 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="בדיקת רכב">
-<meta name="theme-color" content="#111827">
-<title>בדיקת רכב לפי מספר</title>
+<meta name="theme-color" content="#0f172a">
+<title>בדיקת רכב לפני רכישה</title>
 <style>
-  :root{--bg:#0f172a;--card:#1e293b;--line:#334155;--txt:#f1f5f9;--mute:#94a3b8;--acc:#22c55e;--warn:#f59e0b;--bad:#ef4444;--plate:#f7d117}
+  :root{--bg:#0f172a;--card:#1e293b;--line:#334155;--txt:#f1f5f9;--mute:#94a3b8;--acc:#22c55e;--warn:#f59e0b;--bad:#ef4444;--plate:#f7d117;--in:#0b1222;--blue:#60a5fa}
   *{box-sizing:border-box}
-  body{margin:0;font-family:-apple-system,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--txt);padding:16px;max-width:560px;margin-inline:auto}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--txt);padding:16px 16px calc(84px + env(safe-area-inset-bottom));max-width:640px;margin-inline:auto;line-height:1.45}
   h1{font-size:20px;margin:6px 0 16px;text-align:center}
+  h3{font-size:14px;margin:14px 0 8px;color:var(--txt)}
   .plate{display:flex;align-items:stretch;border:3px solid #111;border-radius:10px;overflow:hidden;background:var(--plate);direction:ltr}
   .plate .il{background:#1e40af;color:#fff;font-weight:700;font-size:12px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 8px}
   .plate input{flex:1;border:0;background:transparent;font-size:30px;font-weight:800;text-align:center;letter-spacing:2px;padding:10px 4px;color:#111;min-width:0;outline:none}
-  button{font:inherit}
+  button{font:inherit;cursor:pointer}
   .go{width:100%;margin-top:10px;background:var(--acc);color:#04210f;border:0;border-radius:10px;padding:14px;font-size:18px;font-weight:700}
   .go:disabled{opacity:.6}
   .cam{display:block;text-align:center;margin-top:8px;background:transparent;color:var(--txt);border:2px dashed var(--line);border-radius:10px;padding:12px;font-size:16px;font-weight:600;cursor:pointer}
   #ocrPrev{max-width:100%;border-radius:8px;margin-top:8px;display:block;margin-inline:auto}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:14px}
   .card h2{font-size:15px;color:var(--mute);margin:0 0 10px;font-weight:600}
-  .big{font-size:22px;font-weight:800;margin:0 0 4px}
+  .big{font-size:22px;font-weight:800;margin:6px 0 4px}
   .sub{color:var(--mute);font-size:14px}
+  .small{font-size:12px}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .kv{background:#0b1222;border-radius:8px;padding:8px 10px}
+  .kv{background:var(--in);border-radius:8px;padding:8px 10px;display:block}
   .kv .k{font-size:12px;color:var(--mute)}
   .kv .v{font-size:16px;font-weight:700;margin-top:2px;word-break:break-word}
-  .hand{font-size:44px;font-weight:900;color:var(--acc);line-height:1}
+  .kv .v.na{font-size:13px;font-weight:600;color:var(--warn)}
+  .src{font-size:10.5px;color:var(--mute);margin-top:4px;opacity:.85}
+  .src.na{color:var(--warn)} .src.est{color:var(--blue)}
   table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
-  td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right}
+  td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
   th{color:var(--mute);font-weight:600}
+  td.num{direction:ltr;text-align:left}
   .price{font-size:28px;font-weight:900;color:var(--plate)}
   .note{font-size:12px;color:var(--mute);margin-top:8px;line-height:1.5}
   .err{color:var(--bad);font-weight:600}
   .warn{color:var(--warn)}
+  .mute{color:var(--mute)}
   .hist{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-  .hist button{background:#0b1222;color:var(--txt);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px}
+  .hist button{background:var(--in);color:var(--txt);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px}
   .spin{display:inline-block;width:16px;height:16px;border:2px solid var(--mute);border-top-color:transparent;border-radius:50%;animation:s 1s linear infinite;vertical-align:middle}
   @keyframes s{to{transform:rotate(360deg)}}
   details summary{cursor:pointer;color:var(--mute);font-size:13px}
-  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
-  .chip{padding:4px 10px;border-radius:999px;font-size:13px;font-weight:700}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .chip{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
   .chip.ok{background:#14532d;color:#bbf7d0} .chip.bad{background:#78350f;color:#fde68a}
   .inp{width:100%;background:transparent;border:0;border-bottom:1px solid var(--line);color:var(--txt);font-size:16px;font-weight:700;padding:4px 0;outline:none}
   .neg{color:#fca5a5} .pos{color:#86efac}
-  .lnk{display:block;background:#0b1222;border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:8px;color:var(--txt);text-decoration:none;font-weight:600}
+  .lnk{display:block;background:var(--in);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:8px;color:var(--txt);text-decoration:none;font-weight:600}
+  .lnk.sm{padding:8px 10px;font-size:13px;display:inline-block}
   pre{white-space:pre-wrap;font-size:11px;color:var(--mute);direction:ltr;text-align:left}
+
+  /* חדש */
+  .row{display:flex;align-items:center;gap:8px} .between{justify-content:space-between} .gap{gap:8px} .mt{margin-top:10px}
+  .pl{direction:ltr;background:var(--plate);color:#111;font-weight:900;border-radius:6px;padding:2px 10px;letter-spacing:1px;font-size:18px}
+  .badge{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .badge.ok{background:#14532d;color:#bbf7d0} .badge.bad{background:#7f1d1d;color:#fecaca}
+  .badge.na{background:#78350f;color:#fde68a} .badge.est{background:#1e3a8a;color:#bfdbfe}
+  .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+  .btn{background:var(--in);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:14px;font-weight:700}
+  .btn.pri{background:var(--acc);color:#04210f;border-color:var(--acc)}
+  .btn.sm{padding:6px 10px;font-size:13px}
+  .btn:disabled{opacity:.6}
+  .banner{border-color:var(--blue);display:flex;gap:10px;align-items:center;justify-content:space-between;font-size:14px}
+  .risk{display:flex;gap:16px;align-items:center}
+  .risk .score{font-size:46px;font-weight:900;line-height:1}
+  .risk .score small{font-size:14px;color:var(--mute);font-weight:600}
+  .risk.low .score{color:var(--acc)} .risk.mid .score{color:var(--warn)} .risk.high .score{color:var(--bad)}
+  .risk>div:last-child{flex:1}
+  .bar{height:6px;background:var(--in);border-radius:4px;margin-top:6px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--blue)}
+  .warnbox{background:#3b2a0b;border:1px solid #78350f;color:#fde68a;border-radius:8px;padding:8px 10px;font-size:13px;margin-top:10px}
+  .comps{margin-top:10px;display:grid;gap:8px}
+  .comp{background:var(--in);border-radius:8px;padding:8px 10px}
+  .comp.off{border:1px dashed #78350f}
+  .comp .sub{font-size:13px;margin-top:2px}
+  .nc{background:var(--in);border:1px dashed #78350f;border-radius:8px;padding:10px;margin-top:8px}
+  .nc-h{display:flex;gap:8px;align-items:center;margin-bottom:4px;flex-wrap:wrap}
+  .nc .sub{font-size:13px}
+  .cmpi{background:var(--in);border-radius:8px;padding:8px 10px;margin-top:8px}
+  .recs{margin:0;padding-inline-start:18px;display:grid;gap:6px;font-size:14px}
+  .recs li.must::marker{content:"⛔ "} .recs li.high::marker{content:"⚠️ "} .recs li.mid::marker{content:"🔸 "} .recs li.info::marker{content:"ℹ️ "}
+  .recs li.must{font-weight:700}
+  .srcs td,.srcs th{font-size:12.5px} .srcs a{color:var(--blue)}
+  .tscroll{overflow-x:auto;margin-inline:-4px}
+  .cmpT th:first-child{white-space:nowrap}
+  .cmpT td,.cmpT th{font-size:13px;min-width:90px}
+  .linkbtn{background:none;border:0;color:var(--blue);padding:0;font-weight:700;text-align:right}
+  .li{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .li .linkbtn{flex:1}
+  .x{background:none;border:0;color:var(--mute);font-size:16px;padding:4px 8px}
+  .field{width:100%;background:var(--in);border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:10px;font-size:16px;margin-top:8px}
+  .ltr{direction:ltr;text-align:left}
+  .plan{background:var(--in);border-radius:8px;padding:10px;margin-top:8px}
+  .cmpSlots{display:grid;gap:8px}
+  .cmpSlots .plate input{font-size:22px;padding:6px 4px}
+  .tabs{position:fixed;inset-inline:0;bottom:0;display:flex;justify-content:center;background:rgba(15,23,42,.96);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:5;backdrop-filter:blur(8px)}
+  .tabs button{flex:1;max-width:200px;background:none;border:0;color:var(--mute);font-size:12px;font-weight:700;padding:6px;display:flex;flex-direction:column;align-items:center;gap:2px}
+  .tabs button span{font-size:20px}
+  .tabs button[aria-current="page"]{color:var(--acc)}
+  .print-only{display:none}
+  @media (max-width:360px){ .grid{grid-template-columns:1fr} }
+
+  /* הדפסה / PDF – רקע בהיר, בלי ממשק */
+  @media print{
+    :root{--bg:#fff;--card:#fff;--line:#d1d5db;--txt:#111827;--mute:#4b5563;--in:#f3f4f6;--plate:#f7d117}
+    body{padding:0;max-width:none;font-size:12px}
+    .tabs,form,#hist,.noprint,h1,[data-view]:not([data-view="check"]){display:none!important}
+    .print-only{display:block}
+    .ph{font-size:18px;font-weight:900;margin-bottom:8px}
+    .card{border-color:#d1d5db;margin-top:10px}
+    .kv,.comp,.nc,.cmpi,tr,li,h2,h3{break-inside:avoid} h2,h3{break-after:avoid}
+    .price{color:#111}
+    .inp{border:0}
+    .warnbox{background:#fef3c7;color:#78350f}
+    .badge.ok,.chip.ok{background:#dcfce7;color:#14532d} .badge.bad{background:#fee2e2;color:#7f1d1d}
+    .badge.na,.chip.bad{background:#fef3c7;color:#78350f} .badge.est{background:#dbeafe;color:#1e3a8a}
+    .neg{color:#b91c1c} .pos{color:#15803d} .src.na{color:#92400e} .src.est{color:#1d4ed8}
+    a{color:#111;text-decoration:none}
+    @page{margin:12mm}
+  }
 </style>
 </head>
 <body>
-<h1>🚗 בדיקת רכב לפי מספר רישוי</h1>
 
-<form id="f" autocomplete="off">
-  <div class="plate">
-    <div class="il">IL<br>🇮🇱</div>
-    <input id="plate" inputmode="numeric" placeholder="00-000-00" maxlength="12">
-  </div>
-  <button class="go" id="go">בדוק</button>
-  <label class="cam" for="photo">📷 צלם / בחר תמונה של לוחית</label>
-  <input type="file" id="photo" accept="image/*" hidden>
-  <div id="ocr" class="sub" style="text-align:center;margin-top:6px"></div>
-</form>
-<div class="hist" id="hist"></div>
-<div id="out"></div>
-
-<script>
-const API = "https://data.gov.il/api/3/action/datastore_search";
-const R = {
-  private:   "053cea08-09bc-40ec-8f7a-156f0677aff3", // רכבים פרטיים ומסחריים פעילים
-  inactive:  "f6efe89a-fb3d-43a4-bb61-9bf12a9b9099", // רכבים לא פעילים (עם קוד דגם)
-  cancelled: "851ecab1-0622-4dbe-a6c7-f950cf82abf9", // ביטול סופי
-  owners:    "bb2355dc-9ec7-4f06-9c3f-3344672171da", // היסטוריית בעלויות
-  mileage:   "56063a99-8a3e-4ff4-912e-5966c0279bad", // היסטוריית ק"מ/מבנה
-  prices:    "39f455bf-6db0-4926-859d-017f34eacbcb", // מחירון רכב חדש (יבואן)
-  wltp:      "142afde2-6228-49f9-8a29-9b6c3a0cbe40"  // מפרט דגם
-};
-
-/* ---------- API: fetch, ואם CORS נחסם – JSONP ---------- */
-function buildUrl(resource, params){
-  const p = new URLSearchParams({resource_id: resource, ...params});
-  return API + "?" + p.toString();
-}
-async function ckan(resource, params){
-  const url = buildUrl(resource, params);
-  try{
-    const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), 12000);
-    const r = await fetch(url, {signal: ctl.signal}); clearTimeout(t);
-    if(!r.ok) throw new Error("HTTP "+r.status);
-    const j = await r.json();
-    if(!j.success) throw new Error("API error");
-    return j.result.records || [];
-  }catch(e){
-    return jsonp(url);
-  }
-}
-function jsonp(url){
-  return new Promise((res, rej)=>{
-    const cb = "cb_" + Math.random().toString(36).slice(2);
-    const s = document.createElement("script");
-    const done = ()=>{ delete window[cb]; s.remove(); };
-    const t = setTimeout(()=>{ done(); rej(new Error("timeout")); }, 15000);
-    window[cb] = (j)=>{ clearTimeout(t); done(); j && j.success ? res(j.result.records || []) : rej(new Error("API error")); };
-    s.onerror = ()=>{ clearTimeout(t); done(); rej(new Error("network")); };
-    s.src = url + "&callback=" + cb;
-    document.head.appendChild(s);
-  });
-}
-const byPlate = (res, plate) => ckan(res, {filters: JSON.stringify({mispar_rechev: Number(plate)}), limit: 100});
-
-/* ---------- עזרי תצוגה ---------- */
-const $ = id => document.getElementById(id);
-const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const nis = n => "₪ " + Number(n).toLocaleString("he-IL");
-const fmtPlate = p => p.length===8 ? `${p.slice(0,3)}-${p.slice(3,5)}-${p.slice(5)}` : p.length===7 ? `${p.slice(0,2)}-${p.slice(2,5)}-${p.slice(5)}` : p;
-function fmtDate(v){
-  if(v==null || v==="") return "—";
-  const s = String(v);
-  if(/^\d{6}$/.test(s)) return s.slice(4)+"/"+s.slice(0,4);          // 202306
-  if(/^\d{4}-\d{1,2}$/.test(s)) { const [y,m]=s.split("-"); return m.padStart(2,"0")+"/"+y; }
-  const d = new Date(s); if(!isNaN(d)) return d.toLocaleDateString("he-IL");
-  return s;
-}
-const kv = (k,v) => v==null||v==="" ? "" : `<div class="kv"><div class="k">${k}</div><div class="v">${esc(v)}</div></div>`;
-const pick = (rec, re) => { const k = Object.keys(rec).find(k => re.test(k)); return k ? rec[k] : undefined; };
-
-/* ---------- היסטוריית חיפושים ---------- */
-function getHist(){ try{ return JSON.parse(localStorage.getItem("carHist")||"[]"); }catch{ return []; } }
-function addHist(p, label){
-  try{
-    const h = getHist().filter(x=>x.p!==p); h.unshift({p, label}); localStorage.setItem("carHist", JSON.stringify(h.slice(0,8)));
-  }catch{}
-  renderHist();
-}
-function renderHist(){
-  $("hist").innerHTML = getHist().map(x=>`<button data-p="${x.p}">${fmtPlate(x.p)} · ${esc(x.label||"")}</button>`).join("");
-  $("hist").querySelectorAll("button").forEach(b=>b.onclick=()=>{ $("plate").value=b.dataset.p; run(b.dataset.p); });
-}
-
-/* ---------- זרימה ראשית ---------- */
-$("f").onsubmit = e => { e.preventDefault(); const p = $("plate").value.replace(/\D/g,""); if(p.length<5) return show(`<div class="card err">יש להזין מספר רישוי תקין</div>`); run(p); };
-
-function show(html){ $("out").innerHTML = html; }
-
-async function run(plate){
-  $("go").disabled = true;
-  show(`<div class="card"><span class="spin"></span> מחפש במאגרי משרד התחבורה…</div>`);
-  try{
-    let car = (await byPlate(R.private, plate))[0], status = "פעיל";
-    if(!car){ car = (await byPlate(R.inactive, plate))[0]; status = "לא פעיל"; }
-    if(!car){ car = (await byPlate(R.cancelled, plate))[0]; status = "ירד מהכביש (ביטול סופי)"; }
-    if(!car){ show(`<div class="card err">לא נמצא רכב עם מספר ${fmtPlate(plate)} במאגרים</div>`); return; }
-
-    // שאר השאילתות במקביל
-    const [owners, mileage, priceRows] = await Promise.all([
-      byPlate(R.owners, plate).catch(()=>null),
-      byPlate(R.mileage, plate).catch(()=>null),
-      (car.tozeret_cd && car.degem_cd)
-        ? ckan(R.prices, {filters: JSON.stringify({tozeret_cd: Number(car.tozeret_cd), degem_cd: Number(car.degem_cd)}), limit: 200}).catch(()=>null)
-        : Promise.resolve(null)
-    ]);
-
-    render(plate, car, status, owners, mileage, priceRows);
-    addHist(plate, `${car.tozeret_nm||""} ${car.kinuy_mishari||car.degem_nm||""} ${car.shnat_yitzur||""}`.trim());
-  }catch(e){
-    show(`<div class="card err">שגיאה בגישה ל-data.gov.il (${esc(e.message)}). נסה שוב בעוד רגע.</div>`);
-  }finally{ $("go").disabled = false; }
-}
-
-function render(plate, car, status, owners, mileage, priceRows){
-  const model = `${car.tozeret_nm||""} ${car.kinuy_mishari||""}`.trim();
-
-  /* --- דגם --- */
-  let html = `<div class="card">
-    <h2>הרכב · ${fmtPlate(plate)} · <span class="${status==="פעיל"?"":"warn"}">${status}</span></h2>
-    <p class="big">${esc(model || car.degem_nm)}</p>
-    <div class="sub">${esc(car.ramat_gimur||"")} ${car.degem_nm?"· דגם "+esc(car.degem_nm):""}</div>
-    <div class="grid" style="margin-top:10px">
-      ${kv("שנת ייצור", car.shnat_yitzur)}
-      ${kv("עלייה לכביש", fmtDate(car.moed_aliya_lakvish))}
-      ${kv("צבע", car.tzeva_rechev)}
-      ${kv("דלק", car.sug_delek_nm)}
-      ${kv("בעלות נוכחית", car.baalut)}
-      ${kv("טסט אחרון", fmtDate(car.mivchan_acharon_dt))}
-      ${kv("תוקף רישיון", fmtDate(car.tokef_dt))}
-      ${kv("קוד מנוע", car.degem_manoa)}
+<section data-view="check">
+  <h1>🚗 בדיקת רכב לפני רכישה</h1>
+  <form id="f" autocomplete="off">
+    <div class="plate">
+      <div class="il">IL<br>🇮🇱</div>
+      <input id="plate" inputmode="numeric" placeholder="00-000-00" maxlength="12" aria-label="מספר רישוי">
     </div>
-  </div>`;
+    <button class="go" id="go">בדוק</button>
+    <label class="cam" for="photo">📷 צלם / בחר תמונה של לוחית</label>
+    <input type="file" id="photo" accept="image/*" hidden>
+    <div id="ocr" class="sub" style="text-align:center;margin-top:6px"></div>
+  </form>
+  <div class="hist" id="hist"></div>
+  <div id="out"></div>
+</section>
 
-  /* --- בעלויות --- */
-  const own = ownersInfo(owners, car);
-  if(own.rows.length){
-    const chips = Object.entries(own.counts).filter(([,v])=>v).map(([k,v])=>
-      `<span class="chip ${k==="פרטי"?"ok":"bad"}">${k} × ${v}</span>`).join("");
-    html += `<div class="card">
-      <h2>היסטוריית בעלויות</h2>
-      <div style="display:flex;align-items:center;gap:14px">
-        <div class="hand">יד ${own.n}</div>
-        <div class="sub">${own.n===1?"בעלים ראשונים":"עבר "+own.n+" בעלויות"}
-          ${own.firstType && own.firstType!=="פרטי" ? `<br><span class="warn">⚠ מקור: ${esc(own.firstType)}</span>` : ""}</div>
-      </div>
-      <div class="chips">${chips}</div>
-      <table><tr><th>#</th><th>מתאריך</th><th>סוג בעלות</th></tr>
-        ${own.rows.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(fmtDate(r.date))}</td><td>${esc(r.type||"—")}</td></tr>`).join("")}
-      </table>
-      <div class="note">ידיים פרטיות: ${own.counts["פרטי"]||0} · ליסינג: ${own.counts["ליסינג"]||0} · השכרה: ${own.counts["השכרה"]||0} · חברה: ${own.counts["חברה"]||0}${own.counts["אחר"]?" · אחר: "+own.counts["אחר"]:""}<br>
-      מקור: מאגר היסטוריית כלי רכב פרטיים. המאגר מכסה רכבים פרטיים פעילים מ-2017 ואילך, ותאריכים מוצגים לפי רבעון.</div>
-    </div>`;
-  } else {
-    html += `<div class="card"><h2>היסטוריית בעלויות</h2><div class="warn">אין נתוני בעלויות במאגר לרכב הזה</div>
-      <div class="note">המאגר כולל רק רכבים פרטיים פעילים מ-2017 ואילך. בעלות נוכחית: ${esc(car.baalut||"—")}</div></div>`;
-  }
-
-  /* --- מחירון --- */
-  html += renderPrice(car, priceRows);
-  const np = newPriceOf(car, priceRows);
-  const kmLast = mileage && mileage.length ? pick(mileage[0], /kilometer|km|nesua/i) : null;
-  html += renderEstimate(car, np, own, kmLast);
-  html += renderLinks(plate);
-
-  /* --- ק"מ / שינויים --- */
-  if(mileage && mileage.length){
-    const m = mileage[0];
-    const km = pick(m, /kilometer|km|nesua/i);
-    const cells = [
-      kv("ק״מ בטסט האחרון", km!=null ? Number(km).toLocaleString("he-IL") : null),
-      kv("שינוי צבע", m.shinui_zeva_ind!=null ? (m.shinui_zeva_ind==1?"כן":"לא") : null),
-      kv("שינוי צמיג", m.shnui_zmig_ind!=null ? (m.shnui_zmig_ind==1?"כן":"לא") : null),
-      kv("מקוריות", m.mkoriut_nm)
-    ].join("");
-    if(cells) html += `<div class="card"><h2>היסטוריה טכנית</h2><div class="grid">${cells}</div></div>`;
-  }
-
-  html += `<div class="card"><details><summary>נתונים גולמיים</summary><pre>${esc(JSON.stringify({car, owners, mileage}, null, 2))}</pre></details></div>`;
-  show(html);
-  bindEstimate();
-}
-
-function renderPrice(car, rows){
-  const head = `<div class="card"><h2>מחירון (מחיר רכב חדש ביבוא)</h2>`;
-  if(!rows || !rows.length){
-    return head + `<div class="warn">לא נמצא מחיר לקוד הדגם הזה במחירון הממשלתי</div>
-      <div class="note">ייתכן שהדגם חדש מדי, יבוא אישי, או שהמחירון לא עודכן לשנה זו. לשווי רכב משומש יש לבדוק במחירון לוי יצחק / icar.</div></div>`;
-  }
-  const year = Number(car.shnat_yitzur);
-  const exact = rows.filter(r => Number(r.shnat_yitzur)===year);
-  let chosen, approx = false;
-  if(exact.length) chosen = exact;
-  else {
-    const nearestYear = rows.map(r=>Number(r.shnat_yitzur)).sort((a,b)=>Math.abs(a-year)-Math.abs(b-year))[0];
-    chosen = rows.filter(r => Number(r.shnat_yitzur)===nearestYear); approx = true;
-  }
-  const prices = [...new Set(chosen.map(r=>Number(r.mehir)).filter(Boolean))];
-  const r0 = chosen[0];
-  const priceTxt = prices.length>1 ? `${nis(Math.min(...prices))} – ${nis(Math.max(...prices))}` : nis(prices[0]);
-  return head + `
-    <div class="price">${priceTxt}</div>
-    <div class="sub">${esc(r0.kinuy_mishari||"")} · שנת ${esc(r0.shnat_yitzur)} ${r0.shem_yevuan?"· "+esc(r0.shem_yevuan):""}</div>
-    ${approx?`<div class="warn" style="margin-top:6px">⚠ אין מחיר לשנת ${year} — מוצג מחיר שנת ${esc(r0.shnat_yitzur)} של אותו קוד דגם</div>`:""}
-    <div class="note">זה מחיר המחירון של רכב חדש כפי שדווח ע״י היבואן, לא שווי הרכב המשומש היום.</div>
-  </div>`;
-}
-
-/* ---------- זיהוי מספר מתמונה (OCR) ---------- */
-let tessLoad;
-function loadTesseract(){
-  if(window.Tesseract) return Promise.resolve();
-  return tessLoad ||= new Promise((res, rej)=>{
-    const s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
-    s.onload = res; s.onerror = ()=>{ tessLoad = null; rej(new Error("טעינת מנוע הזיהוי נכשלה")); };
-    document.head.appendChild(s);
-  });
-}
-function loadImage(file){
-  return new Promise((res, rej)=>{
-    const img = new Image(); img.onload = ()=>res(img); img.onerror = rej;
-    img.src = URL.createObjectURL(file);
-  });
-}
-/* OCR_START */
-const mkCanvas = (w,h) => { const c = document.createElement("canvas"); c.width=Math.max(1,Math.round(w)); c.height=Math.max(1,Math.round(h)); return c; };
-const isYellow = (r,g,b) => r>150 && g>110 && b<110 && r-b>70 && g-b>50;
-const lumOf = (r,g,b) => 0.3*r+0.59*g+0.11*b;
-
-// מאתר את הלוחית הצהובה, מנקה רקע, מיישר זווית ומחזיר כמה גרסאות מוטות לזיהוי
-function preparePlate(img){
-  const sc = Math.min(1, 1400/img.width);
-  const W = Math.round(img.width*sc), H = Math.round(img.height*sc);
-  const c = mkCanvas(W,H), x = c.getContext("2d");
-  x.drawImage(img,0,0,W,H);
-  const d = x.getImageData(0,0,W,H).data;
-
-  // 1. רשת 4px – הרכיב הצהוב הגדול ביותר
-  const C=4, gw=Math.floor(W/C), gh=Math.floor(H/C), grid=new Uint8Array(gw*gh);
-  for(let gy=0;gy<gh;gy++) for(let gx=0;gx<gw;gx++){
-    let n=0; for(let yy=0;yy<C;yy++) for(let xx=0;xx<C;xx++){ const p=((gy*C+yy)*W+gx*C+xx)*4; if(isYellow(d[p],d[p+1],d[p+2])) n++; }
-    grid[gy*gw+gx] = n > C*C*0.3 ? 1 : 0;
-  }
-  const seen=new Uint8Array(gw*gh); let best=null;
-  for(let i=0;i<grid.length;i++){
-    if(!grid[i]||seen[i]) continue;
-    const q=[i]; seen[i]=1; let n=0,x0=1e9,y0=1e9,x1=-1,y1=-1;
-    while(q.length){ const k=q.pop(); n++; const kx=k%gw, ky=(k/gw)|0;
-      if(kx<x0)x0=kx; if(kx>x1)x1=kx; if(ky<y0)y0=ky; if(ky>y1)y1=ky;
-      for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const nx=kx+dx, ny=ky+dy;
-        if(nx>=0&&ny>=0&&nx<gw&&ny<gh){ const j=ny*gw+nx; if(grid[j]&&!seen[j]){ seen[j]=1; q.push(j); } } } }
-    if(!best||n>best.n) best={n,x0,y0,x1,y1};
-  }
-  if(!best || best.n < 20) return {found:false, variants:[c], preview:c};
-
-  // 2. בתוך הלוחית: כל עמודה – רק מה שבין הקצה העליון לתחתון של הצהוב; כהה=שחור
-  const bx=best.x0*C, by=best.y0*C, bw=(best.x1-best.x0+1)*C, bh=(best.y1-best.y0+1)*C;
-  const clean = mkCanvas(bw,bh), cx=clean.getContext("2d");
-  const out = cx.createImageData(bw,bh); out.data.fill(255);
-  const xs=[], tops=[];
-  for(let i=0;i<bw;i++){
-    let t=-1,b=-1;
-    for(let j=0;j<bh;j++){ const p=((by+j)*W+bx+i)*4; if(isYellow(d[p],d[p+1],d[p+2])){ if(t<0)t=j; b=j; } }
-    if(t<0 || b-t<4) continue;
-    xs.push(i); tops.push(t);
-    for(let j=t;j<=b;j++){ const p=((by+j)*W+bx+i)*4; const v = lumOf(d[p],d[p+1],d[p+2])<110 ? 0 : 255; const o=(j*bw+i)*4; out.data[o]=out.data[o+1]=out.data[o+2]=v; }
-  }
-  cx.putImageData(out,0,0);
-
-  // 3. זווית מהקצה העליון (רגרסיה) ויישור
-  let ang=0;
-  if(xs.length>10){
-    const n=xs.length, mx=xs.reduce((a,b)=>a+b)/n, my=tops.reduce((a,b)=>a+b)/n;
-    let num=0,den=0; for(let k=0;k<n;k++){ num+=(xs[k]-mx)*(tops[k]-my); den+=(xs[k]-mx)**2; }
-    ang = Math.atan(num/den);
-  }
-  const cos=Math.abs(Math.cos(ang)), sin=Math.abs(Math.sin(ang));
-  const rw=bw*cos+bh*sin, rh=bw*sin+bh*cos;
-  const rot=mkCanvas(rw,rh), rx=rot.getContext("2d");
-  rx.fillStyle="#fff"; rx.fillRect(0,0,rot.width,rot.height);
-  rx.translate(rot.width/2,rot.height/2); rx.rotate(-ang); rx.drawImage(clean,-bw/2,-bh/2);
-
-  // 4. חיתוך לשורת הספרות (הפס עם הכי הרבה פיקסלים שחורים)
-  const rd=rx.getImageData(0,0,rot.width,rot.height).data, RW=rot.width, RH=rot.height;
-  const rows=new Array(RH).fill(0);
-  for(let j=0;j<RH;j++) for(let i=0;i<RW;i++) if(rd[(j*RW+i)*4]<128) rows[j]++;
-  const mxr=Math.max(...rows); let s=rows.indexOf(mxr), e=s;
-  while(s>0 && rows[s-1]>mxr*0.2) s--; while(e<RH-1 && rows[e+1]>mxr*0.2) e++;
-  const pad=Math.round((e-s)*0.12); s=Math.max(0,s-pad); e=Math.min(RH-1,e+pad);
-  const bandH=e-s+1;
-
-  // 5. כמה גרסאות של תיקון הטיה (פרספקטיבה), בגובה ~100px
-  const target=100/bandH, variants=[];
-  for(const sh of [0, 0.25, 0.45, -0.25]){
-    const w0=RW+Math.abs(sh)*bandH, P=30;
-    const v=mkCanvas(w0*target+2*P, bandH*target+2*P), vx=v.getContext("2d");
-    vx.fillStyle="#fff"; vx.fillRect(0,0,v.width,v.height);
-    vx.translate(P,P); vx.scale(target,target);
-    vx.transform(1,0,-sh,1,0,0); // הטיה אופקית
-    vx.drawImage(rot,0,s,RW,bandH, sh>0 ? sh*bandH : 0, 0, RW, bandH);
-    variants.push(v);
-  }
-  return {found:true, variants, preview:variants[0]};
-}
-
-function extractPlate(text){
-  const cands = (text.match(/\d[\d\s\-–·.:]{5,14}\d/g)||[]).map(s=>s.replace(/\D/g,""));
-  return cands.find(s=>s.length===8) || cands.find(s=>s.length===7) || null;
-}
-
-async function recognizePlate(img, TesseractLib, workerOpts){
-  const prep = preparePlate(img);
-  const worker = await TesseractLib.createWorker("eng", 1, workerOpts||{});
-  try{
-    await worker.setParameters({tessedit_char_whitelist:"0123456789-", tessedit_pageseg_mode: prep.found ? "7" : "11"});
-    const votes={};
-    for(const v of prep.variants){
-      const {data} = await worker.recognize(v.toBuffer ? v.toBuffer("image/png") : v);
-      const p = extractPlate(data.text.replace(/\n/g," "));
-      if(p){ votes[p]=(votes[p]||0)+ (p.length===8?1.1:1); }
-    }
-    const plate = Object.entries(votes).sort((a,b)=>b[1]-a[1])[0]?.[0] || null;
-    return {plate, votes, preview: prep.preview};
-  } finally { await worker.terminate(); }
-}
-/* OCR_END */
-
-$("photo").onchange = async e => {
-  const file = e.target.files[0]; e.target.value = ""; if(!file) return;
-  const st = $("ocr");
-  st.innerHTML = `<span class="spin"></span> מזהה מספר מהתמונה… (בפעם הראשונה לוקח כמה שניות)`;
-  try{
-    const [img] = await Promise.all([loadImage(file), loadTesseract()]);
-    const {plate, preview} = await recognizePlate(img, Tesseract);
-    const canvas = preview;
-    const prev = `<img id="ocrPrev" src="${canvas.toDataURL("image/jpeg",0.7)}" style="max-height:90px">`;
-    if(plate){
-      $("plate").value = fmtPlate(plate);
-      st.innerHTML = `זוהה: <b>${fmtPlate(plate)}</b> — אם לא נכון, תקן ולחץ בדוק${prev}`;
-      run(plate);
-    } else {
-      st.innerHTML = `<span class="err">לא הצלחתי לזהות מספר.</span> נסה צילום קרוב וישר יותר, או הקלד ידנית${prev}`;
-    }
-  }catch(err){
-    st.innerHTML = `<span class="err">שגיאה בזיהוי: ${esc(err.message||err)}</span>`;
-  }
-};
-
-
-/* ---------- סיווג בעלויות ---------- */
-function classifyOwner(t){
-  t = String(t||"");
-  if(/ליסינג/.test(t)) return "ליסינג";
-  if(/השכר/.test(t)) return "השכרה";
-  if(/חבר|תאגיד|ממשל|מסחר/.test(t)) return "חברה";
-  if(/פרטי/.test(t)) return "פרטי";
-  return t ? "אחר" : "פרטי";
-}
-function ownersInfo(owners, car){
-  const rows = (owners||[]).map(o => ({date: pick(o, /baalut_dt|_dt$|date/i), type: o.baalut ?? pick(o, /baalut(?!_dt)/i)}))
-                           .sort((a,b)=> String(a.date).localeCompare(String(b.date)));
-  const counts = {"פרטי":0,"ליסינג":0,"השכרה":0,"חברה":0,"אחר":0};
-  rows.forEach(r => counts[classifyOwner(r.type)]++);
-  return {rows, n: rows.length || 1, counts,
-          firstType: rows.length ? classifyOwner(rows[0].type) : classifyOwner(car.baalut)};
-}
-
-/* ---------- מחיר חדש לחישוב ---------- */
-function newPriceOf(car, rows){
-  if(!rows || !rows.length) return null;
-  const year = Number(car.shnat_yitzur);
-  const nearest = rows.map(r=>Number(r.shnat_yitzur)).sort((a,b)=>Math.abs(a-year)-Math.abs(b-year))[0];
-  const ps = rows.filter(r=>Number(r.shnat_yitzur)===nearest).map(r=>Number(r.mehir)).filter(Boolean);
-  return ps.length ? Math.round(ps.reduce((a,b)=>a+b)/ps.length) : null;
-}
-
-/* ---------- הערכת שווי משוקללת ---------- */
-function roadDate(car){
-  const s = String(car.moed_aliya_lakvish||"");
-  const m = s.match(/^(\d{4})-(\d{1,2})/); if(m) return new Date(+m[1], +m[2]-1, 15);
-  const y = Number(car.shnat_yitzur); return y ? new Date(y, 5, 15) : null;
-}
-let EST = null;
-function renderEstimate(car, newPrice, own, kmLast){
-  const rd = roadDate(car);
-  const age = rd ? Math.max(0, (Date.now()-rd)/(365.25*864e5)) : 0;
-  EST = {age, own, kmDefault: kmLast!=null ? Number(kmLast) : null};
-  return `<div class="card" id="estCard">
-    <h2>הערכת שווי משוקללת (משוער)</h2>
-    <div class="grid">
-      <label class="kv"><div class="k">מחיר חדש (₪)</div><input class="inp" id="estNew" inputmode="numeric" value="${newPrice||""}" placeholder="הזן מחיר"></label>
-      <label class="kv"><div class="k">ק״מ נוכחי</div><input class="inp" id="estKm" inputmode="numeric" value="${EST.kmDefault??""}" placeholder="${Math.round(age*15000)}"></label>
+<section data-view="compare" hidden>
+  <h1>⚖️ השוואת רכבים</h1>
+  <form id="cmpForm" class="card" autocomplete="off">
+    <h2>עד שלושה רכבים</h2>
+    <div class="cmpSlots">
+      <div class="plate"><div class="il">IL</div><input class="cmpIn" dir="auto" inputmode="numeric" placeholder="רכב 1 · 00-000-00" maxlength="12"></div>
+      <div class="plate"><div class="il">IL</div><input class="cmpIn" dir="auto" inputmode="numeric" placeholder="רכב 2 · 00-000-00" maxlength="12"></div>
+      <div class="plate"><div class="il">IL</div><input class="cmpIn" dir="auto" inputmode="numeric" placeholder="רכב 3 · רשות" maxlength="12"></div>
     </div>
-    <div id="estOut" style="margin-top:10px"></div>
-    <div class="note">הערכה לפי נוסחה כללית: ירידה של כ-15% בשנה הראשונה וכ-10% בכל שנה נוספת, עם תיקון לק״מ (מול 15,000 בשנה), מספר ידיים ועבר ליסינג/השכרה/חברה. זה לא מחירון לוי יצחק. לשווי מדויק בדוק בקישורים למטה.</div>
-  </div>`;
-}
-function calcEstimate(newPrice, km){
-  const {age, own} = EST;
-  const lines = [];
-  let v = newPrice;
-  const y1 = Math.min(age,1), rest = Math.max(0,age-1);
-  v *= (1-0.15*y1) * Math.pow(0.90, rest);
-  lines.push([`גיל ${age.toFixed(1)} שנים`, v/newPrice - 1]);
-  let adj = 0;
-  if(km!=null && !isNaN(km)){
-    const diff = km - age*15000;
-    const k = diff>0 ? -Math.min(0.12, diff/10000*0.025) : Math.min(0.08, -diff/10000*0.015);
-    adj += k; lines.push([`ק״מ ${Number(km).toLocaleString("he-IL")} (ממוצע ${Math.round(age*15000).toLocaleString("he-IL")})`, k]);
-  }
-  const handAdj = -Math.min(0.12, Math.max(0, own.n-1)*0.03);
-  if(handAdj) { adj += handAdj; lines.push([`יד ${own.n}`, handAdj]); }
-  const typeAdj = {"השכרה":-0.12,"ליסינג":-0.08,"חברה":-0.05}[own.firstType] || 0;
-  if(typeAdj){ adj += typeAdj; lines.push([`מקור: ${own.firstType}`, typeAdj]); }
-  const extra = (own.counts["ליסינג"]+own.counts["השכרה"]+own.counts["חברה"]) - (typeAdj?1:0);
-  if(extra>0){ const a=-Math.min(0.06, extra*0.03); adj+=a; lines.push([`בעלויות מסחריות נוספות`, a]); }
-  const value = v*(1+adj);
-  return {value, low: value*0.93, high: value*1.07, lines};
-}
-function bindEstimate(){
-  const n = document.getElementById("estNew"), k = document.getElementById("estKm"), out = document.getElementById("estOut");
-  if(!n) return;
-  const upd = () => {
-    const np = Number(n.value.replace(/\D/g,""));
-    if(!np){ out.innerHTML = `<div class="warn">הזן מחיר רכב חדש כדי לחשב</div>`; return; }
-    const kmv = k.value.trim()==="" ? null : Number(k.value.replace(/\D/g,""));
-    const r = calcEstimate(np, kmv);
-    const pct = x => (x>0?"+":"") + (x*100).toFixed(1) + "%";
-    out.innerHTML = `<div class="price">${nis(Math.round(r.value/500)*500)}</div>
-      <div class="sub">טווח סביר: ${nis(Math.round(r.low/500)*500)} – ${nis(Math.round(r.high/500)*500)}</div>
-      <table>${r.lines.map(([t,x])=>`<tr><td>${esc(t)}</td><td style="direction:ltr;text-align:left" class="${x<0?"neg":"pos"}">${pct(x)}</td></tr>`).join("")}</table>`;
-  };
-  n.oninput = k.oninput = upd; upd();
-}
+    <button class="go">השווה</button>
+    <button type="button" class="btn sm mt" id="cmpClear">ניקוי</button>
+  </form>
+  <div id="cmpOut"></div>
+</section>
 
-/* ---------- קישורים לבדיקות חיצוניות ---------- */
-function renderLinks(plate){
-  const L = [
-    ["🛡 תאונות וירידת ערך – מרכז הסליקה (~12 ₪)", "https://infocar.co.il/"],
-    ["💰 מחירון לוי יצחק", "https://www.levi-itzhak.co.il/"],
-    ["💰 מחירון icar", "https://www.icar.co.il/"],
-    ["📋 דוח קארזון", "https://www.carzone.co.il/car-report"]
-  ];
-  return `<div class="card"><h2>בדיקות נוספות (בתשלום / חיצוני)</h2>
-    <div class="sub" style="margin-bottom:8px">לחיצה מעתיקה את מספר הרכב ופותחת את האתר – רק להדביק</div>
-    ${L.map(([t,u])=>`<a class="lnk" href="${u}" target="_blank" rel="noopener" onclick="copyPlate('${plate}')">${t}</a>`).join("")}
-  </div>`;
-}
-function copyPlate(p){ try{ navigator.clipboard.writeText(p); }catch(e){} }
+<section data-view="me" hidden>
+  <h1>👤 האזור שלי</h1>
+  <div id="meOut"></div>
+</section>
 
-renderHist();
-// תמיכה בקישור ישיר: car-lookup.html#54428303
-const h = location.hash.replace(/\D/g,""); if(h){ $("plate").value=h; run(h); }
-</script>
+<nav class="tabs" aria-label="ניווט">
+  <button data-tab="check" aria-current="page"><span>🔍</span>בדיקה</button>
+  <button data-tab="compare"><span>⚖️</span>השוואה</button>
+  <button data-tab="me"><span>👤</span>האזור שלי</button>
+</nav>
+
+<script type="module" src="js/app.js"></script>
 </body>
 </html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ניהול – בדיקת רכב</title>
+<style>
+  :root{--bg:#0f172a;--card:#1e293b;--line:#334155;--txt:#f1f5f9;--mute:#94a3b8;--acc:#22c55e;--warn:#f59e0b;--bad:#ef4444;--in:#0b1222;--blue:#60a5fa}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--txt);padding:16px;max-width:900px;margin-inline:auto}
+  h1{font-size:20px;margin:6px 0 16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:14px}
+  .card h2{font-size:15px;color:var(--mute);margin:0 0 10px;font-weight:600}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .tile .n{font-size:28px;font-weight:900;margin-top:4px}
+  .tile .l{font-size:12px;color:var(--mute)}
+  .sub{color:var(--mute);font-size:14px}
+  .err{color:var(--bad);font-weight:600}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right}
+  th{color:var(--mute);font-weight:600}
+  .bars{display:flex;align-items:flex-end;gap:3px;height:120px;margin-top:10px;direction:ltr}
+  .bars div{flex:1;background:var(--blue);border-radius:3px 3px 0 0;min-height:2px;position:relative}
+  .field{width:100%;background:var(--in);border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:10px;font-size:16px;margin-top:8px;direction:ltr;text-align:left}
+  .btn{background:var(--acc);color:#04210f;border:0;border-radius:10px;padding:10px 16px;font-size:15px;font-weight:700;margin-top:10px;cursor:pointer}
+  a{color:var(--blue)}
+</style>
+</head>
+<body>
+<h1>🛠 ממשק ניהול – בדיקת רכב</h1>
+<a href="../">← חזרה לאפליקציה</a>
+<div id="out"><div class="card sub">טוען…</div></div>
+<script type="module">
+import * as cloud from "../js/cloud.js";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const n = x => Number(x || 0).toLocaleString("he-IL");
+const ils = ag => "₪ " + (Number(ag || 0) / 100).toLocaleString("he-IL", {maximumFractionDigits: 2});
+
+async function main(){
+  if (!cloud.configured()){
+    $("out").innerHTML = `<div class="card"><h2>הענן לא מוגדר</h2>
+      <div class="sub">ממשק הניהול עובד רק מול Supabase. הריצו את supabase/car_platform.sql בפרויקט, ואז הגדירו את הכתובת והמפתח באזור האישי באפליקציה או ב-car/js/config.js.</div></div>`;
+    return;
+  }
+  if (!cloud.session()){
+    $("out").innerHTML = `<div class="card"><h2>התחברות מנהל</h2>
+      <input class="field" id="em" type="email" placeholder="אימייל"><input class="field" id="pw" type="password" placeholder="סיסמה">
+      <button class="btn" id="si">התחברות</button><div id="msg" class="sub"></div></div>`;
+    $("si").onclick = async () => { try{ await cloud.signIn($("em").value.trim(), $("pw").value); main(); }catch(e){ $("msg").textContent = cloud.friendly(e); } };
+    return;
+  }
+  let s;
+  try{ s = await cloud.adminStats(); }
+  catch(e){
+    $("out").innerHTML = `<div class="card err">${e.status === 403 || /forbidden|42501/.test(e.message) ? "למשתמש הזה אין הרשאת מנהל." : "שגיאה בטעינת הנתונים: " + esc(cloud.friendly(e))}</div>`;
+    return;
+  }
+  const max = Math.max(1, ...s.daily.map(d => d.checks));
+  $("out").innerHTML = `
+    <div class="tiles" style="margin-top:14px">
+      ${[["בדיקות (סה״כ)", n(s.checks_total)], ["בדיקות 30 יום", n(s.checks_30d)], ["בדיקות היום", n(s.checks_today)],
+         ["משתמשים", n(s.users_total)], ["משתמשים משלמים", n(s.users_paid)], ["דוחות PDF שהופקו", n(s.pdf_total)],
+         ["השוואות", n(s.compare_total)], ["בדיקות שמורות", n(s.saved_total)],
+         ["הכנסות (סה״כ)", ils(s.revenue_agorot)], ["הכנסות 30 יום", ils(s.revenue_30d_agorot)]]
+        .map(([l, v]) => `<div class="tile"><div class="l">${l}</div><div class="n">${v}</div></div>`).join("")}
+    </div>
+    <div class="card"><h2>בדיקות ביום – 30 ימים אחרונים</h2>
+      ${s.daily.length ? `<div class="bars">${s.daily.map(d => `<div title="${esc(d.day)}: ${d.checks} בדיקות" style="height:${d.checks / max * 100}%"></div>`).join("")}</div>` : `<div class="sub">אין עדיין נתונים.</div>`}
+    </div>
+    <div class="card"><h2>תשלומים אחרונים</h2>
+      ${s.recent_payments.length ? `<table><tr><th>תאריך</th><th>חבילה</th><th>סכום</th><th>סטטוס</th><th>ספק</th></tr>
+        ${s.recent_payments.map(p => `<tr><td>${new Date(p.created_at).toLocaleString("he-IL")}</td><td>${esc(p.plan)}</td><td>${ils(p.amount_agorot)}</td><td>${esc(p.status)}</td><td>${esc(p.provider)}</td></tr>`).join("")}</table>`
+        : `<div class="sub">אין תשלומים. ספק סליקה עוד לא מחובר – ההכנסות יופיעו כאן אחרי החיבור.</div>`}
+    </div>
+    <div class="card sub">הנתונים נספרים מאירועי שימוש אנונימיים (בלי מספרי רכב) ומטבלת התשלומים. עודכן: ${new Date().toLocaleString("he-IL")}</div>`;
+}
+main();
+</script>
+</body>
+</html>
